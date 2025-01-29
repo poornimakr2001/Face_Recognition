@@ -2,7 +2,7 @@ import cv2
 import numpy as np
 import face_recognition
 from ultralytics import YOLO
-
+#working with yolov8-n
 # Load the YOLOv8 model trained specifically for face detection
 model = YOLO("yolov8n-face.pt")  # Use a face-detection-specific YOLO model
 
