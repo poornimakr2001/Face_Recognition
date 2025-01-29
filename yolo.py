@@ -2,9 +2,27 @@ import cv2
 import numpy as np
 import face_recognition
 from ultralytics import YOLO
-#working with yolov8-n
-# Load the YOLOv8 model trained specifically for face detection
-model = YOLO("yolov8n-face.pt")  # Use a face-detection-specific YOLO model
+import os
+
+# Load the YOLOv8 model for face detection
+model = YOLO("yolov8n-face.pt")
+
+# Load known faces and their names
+known_face_encodings = []
+known_face_names = []
+
+# Load known face images from 'known_faces/' directory
+KNOWN_FACES_DIR = r"C:\RCSS\input_images\fac"
+for filename in os.listdir(KNOWN_FACES_DIR):
+    image_path = os.path.join(KNOWN_FACES_DIR, filename)
+    image = face_recognition.load_image_file(image_path)
+    encoding = face_recognition.face_encodings(image)
+
+    if encoding:  # Ensure at least one face is found
+        known_face_encodings.append(encoding[0])
+        known_face_names.append(os.path.splitext(filename)[0])  # Use filename as name
+
+print(f"Loaded {len(known_face_encodings)} known faces.")
 
 # Open webcam
 cap = cv2.VideoCapture(0)
@@ -17,25 +35,35 @@ while True:
     # Convert frame to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Detect faces using YOLO (face-specific model)
+    # Detect faces using YOLO
     results = model(rgb_frame)
     face_locations = []
 
     for r in results:
         for box in r.boxes:
             x1, y1, x2, y2 = map(int, box.xyxy[0])  # Convert to integer values
-            face_locations.append((y1, x2, y2, x1))  # Convert format to (top, right, bottom, left)
+            face_locations.append((y1, x2, y2, x1))  # Convert format for face_recognition
 
-            # Draw bounding box around face
+            # Draw bounding box around detected face
             cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
 
-    # Process face encodings only if faces are detected
+    # Recognize faces
     if face_locations:
         face_encodings = face_recognition.face_encodings(rgb_frame, face_locations)
-        print(f"Detected {len(face_encodings)} face(s).")
 
-    # Display the frame
-    cv2.imshow("YOLO Face Detection", frame)
+        for (top, right, bottom, left), face_encoding in zip(face_locations, face_encodings):
+            matches = face_recognition.compare_faces(known_face_encodings, face_encoding)
+            name = "Unknown"
+
+            if True in matches:
+                best_match_index = np.argmin(face_recognition.face_distance(known_face_encodings, face_encoding))
+                name = known_face_names[best_match_index]
+
+            # Display name on bounding box
+            cv2.putText(frame, name, (left, top - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 2)
+
+    # Show output
+    cv2.imshow("YOLO Face Recognition", frame)
 
     # Press 'q' to exit
     if cv2.waitKey(1) & 0xFF == ord('q'):
