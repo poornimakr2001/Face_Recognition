@@ -9,15 +9,17 @@ import pickle
 model = YOLO("yolov8n-face.pt")
 
 # Directory containing known face images
-KNOWN_FACES_DIR = r"C:\RCSS\input_images\fac"
+KNOWN_FACES_DIR = r"C:\RCSS\input_images"
 CACHE_FILE = "face_cache.pkl"
 
+# Load known face encodings from cache if available
 # Load known face encodings from cache if available
 if os.path.exists(CACHE_FILE):
     with open(CACHE_FILE, "rb") as f:
         known_face_encodings, known_face_names = pickle.load(f)
     print(f"Loaded {len(known_face_encodings)} faces from cache.")
 else:
+
     known_face_encodings = []
     known_face_names = []
     for filename in os.listdir(KNOWN_FACES_DIR):
